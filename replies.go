@@ -12,20 +12,29 @@ func initDictionary() {
 	greetings["how are you"] = struct{}{}
 }
 
-func makeSentences(input string) (sentences []string) {
+func makeSentences(input string) []string {
+	var prev rune
 	snt := strings.FieldsFunc(input, func(r rune) bool {
-		switch r {
+		if r != ' ' {
+			prev = r
+			return false
+		}
+		switch prev {
 		case '.', '?', '!':
+			prev = r
 			return true
 		}
+
+		prev = r
 		return false
 	})
 
+	var sentences []string
 	for _, s := range snt {
 		sentences = append(sentences, strings.Trim(s, " \t\r\n"))
 	}
 
-	return
+	return sentences
 }
 
 func generateReply(history [][]byte) []byte {
@@ -40,14 +49,15 @@ func generateReply(history [][]byte) []byte {
 
 	// Try to make sentences
 	sentences := makeSentences(lastEntry)
-	if len(sentences) == 0 {
-		// This is probably one long sentence
-		sentences = append(sentences, lastEntry)
+	for _, sentence := range sentences {
+		end := rune(sentence[len(sentence)-1])
+		if end == '!' {
+			return []byte("An imperative.")
+		} else if end == '?' {
+			return []byte("A question.")
+		} else {
+			return []byte("A normal sentence.")
+		}
 	}
-
-	if _, ok := greetings[lastEntry]; ok {
-		return []byte("Hi! How are you?")
-	}
-
 	return []byte("Hello")
 }
